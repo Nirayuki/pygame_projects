@@ -94,14 +94,14 @@ def load_animation(path, frame_duration):
 
     # Achando o caminho da imagem, no frame_duration a gente consegue saber quantas vezes será mostrado essa imagem.
     global animation_frames
-    print(path.split('\\') [-1])
-    animation_name = path.split('\\') [-1]
+    print(path.split('/') [-1])
+    animation_name = path.split('/') [-1]
     animation_frame_data = []
 
     # Pegando a imagem e colocando no animation_frame_data.
     for n, frame in enumerate(frame_duration):
         animation_frame_id = animation_name + '_' + str(n)
-        img_location = path + '\\' + animation_frame_id + '.png'
+        img_location = path + '/' + animation_frame_id + '.png'
         animaiton_image = pygame.image.load(img_location).convert()
         animaiton_image.set_colorkey(WHITE)
         animation_frames[animation_frame_id] = animaiton_image.copy()
