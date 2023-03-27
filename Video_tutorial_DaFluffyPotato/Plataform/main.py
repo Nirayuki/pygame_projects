@@ -9,6 +9,8 @@ pygame.mixer.set_num_channels(64)
 
 # Variaveis ------------------------------------------------------------------
 WINDOW_SIZE = (1280,720)
+
+
 FPS = 60
 
 # Player movement
@@ -20,7 +22,7 @@ GRAVITY = 0
 # Chunck
 CHUNCK_SIZE = 8
 
-SCREEN = pygame.display.set_mode(WINDOW_SIZE, 0 ,32)
+SCREEN = pygame.display.set_mode(WINDOW_SIZE, 0 , 32)
 pygame.display.set_caption("Template Pygame init")
 
 DISPLAY = pygame.Surface((300, 200))
