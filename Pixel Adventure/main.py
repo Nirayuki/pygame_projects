@@ -31,6 +31,10 @@ FLIP = False
 PLAYER_ACTION = 'idle'
 INDEX_SHEET = 11
 
+TILE_SHEET = []
+
+TILE_SIZE = 16
+
 # Colors -------------------------------------------------------------------
 
 WHITE = (255, 255, 255)
@@ -44,6 +48,8 @@ BLUE = (146, 244, 255)
 PLAYER_ANIMATION = {}
 
 ANIMATIONS = {"idle": "Idle.png", "run": "Run.png", "jump": "Jump.png", "fall": "Fall.png"}
+
+TERRAIN_SHEET = pygame.image.load(os.path.join(DIR, 'Assets', 'Terrain', 'Terrain (16x16).png'))
 
 # Sounds ---------------------------------------------------------------------
 
@@ -59,7 +65,7 @@ def read_csv(filename):
             map.append(list(row))
     return map
 
-def load_tiles(filename):
+def load_map(filename):
     tiles = []
     map = read_csv(filename)
 
@@ -68,6 +74,8 @@ def load_tiles(filename):
             pass
 # Functions -------------------------------------------------------------------
 
+
+# Criando o sistema de animações do personagem
 def load_image(filename, index, frame):
     global FRAME
     path = os.path.join(DIR, 'Assets', 'Main Characters', 'Mask Dude', filename)
@@ -89,6 +97,8 @@ def load_image(filename, index, frame):
 
     return player_animation[int(FRAME)]
 
+
+# Mudando a animação do Player
 def change_action(player_action):
     global INDEX_SHEET, PLAYER_ACTION
     if player_action == 'idle':
@@ -106,6 +116,13 @@ def change_action(player_action):
     if player_action == 'double_jump':
         INDEX_SHEET = 6
         PLAYER_ACTION = 'double_jump'
+
+def load_terrain():
+    list_tile = []
+    for y in range(10):
+        for x in range(21):
+            list_tile.append(TERRAIN_SHEET.subsurface((x * 16, y * 16), (16, 16)))
+    return list_tile 
         
 # Classes ----------------------------------------------------------------------
 
@@ -171,6 +188,28 @@ while run:
     if player_movement[0] < 0:
         change_action('run')
         FLIP = True
+
+    MAP = read_csv(os.path.join(DIR, 'Maps', 'lvl_01.csv'))
+    TILE_SHEET = load_terrain()
+
+    tile_rect = []
+    for y, layer in enumerate(MAP):
+        for x, tile in enumerate(layer):
+            if tile == '1':
+                DISPLAY.blit(TILE_SHEET[1], (x * TILE_SIZE, y * TILE_SIZE))
+            if tile == '2':
+                DISPLAY.blit(TILE_SHEET[2], (x * TILE_SIZE, y * TILE_SIZE ))
+            if tile == '6':
+                DISPLAY.blit(TILE_SHEET[6], (x * TILE_SIZE, y * TILE_SIZE ))
+            if tile == '7':
+                DISPLAY.blit(TILE_SHEET[7], (x * TILE_SIZE, y * TILE_SIZE ))
+            if tile == '23':
+                DISPLAY.blit(TILE_SHEET[23], (x * TILE_SIZE, y * TILE_SIZE ))
+            if tile != '0':
+                tile_rect.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+
+    #terrain = TERRAIN_SHEET.subsurface((0 * 16, 10 * 16), (16, 16))
+    #DISPLAY.blit(terrain, (50, 50))
 
     #player_movement[1] += GRAVITY
 
