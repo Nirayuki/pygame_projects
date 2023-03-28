@@ -17,7 +17,7 @@ SCREEN = pygame.display.set_mode(WINDOW_SIZE)
 
 DISPLAY = pygame.Surface(WINDOW_GAME)
 
-FONT = pygame.font.SysFont("Verdana", 10)
+FONT = pygame.font.SysFont("comicsans", 20)
 
 
 MOVE_RIGHT = False
@@ -30,6 +30,11 @@ GRAVITY = 0
 FRAME = 0
 FRAME_FRUITS = 0
 
+PLAY_TIMES = 0
+
+QUANTITY_FRUIT = 0
+PASS = False
+
 FLIP = False
 PLAYER_ACTION = 'idle'
 INDEX_SHEET = 11
@@ -37,6 +42,9 @@ INDEX_SHEET = 11
 TILE_SHEET = []
 
 TILE_SIZE = 16
+
+SPRITE_100 = 'Apple.png'
+SPRITE_101 = 'Bananas.png'
 
 # Colors -------------------------------------------------------------------
 
@@ -116,35 +124,64 @@ def load_terrain():
     return list_tile 
         
 
-def collision_test(rect, tiles, fruit_rect, plataform_rect):
+def collision_test(rect, tiles, list_type):
     hit_list = []
+    collision_type = 0
+    i = 0
+    index = 0
     for tile in tiles:
         if rect.colliderect(tile):
             hit_list.append(tile)
-    
-    return hit_list
+            collision_type = list_type[i]
+            index = i
+        i += 1
 
+    return hit_list, collision_type, index
 
-def move(rect, movement, tiles, fruit_rect, plataform_rect):
+is_collidin_bottom = False
+
+def move(rect, movement, tiles, list_type):
+    global QUANTITY_FRUIT, is_collidin_bottom
     collision_types = {'top': False, 'bottom': False, 'right': False, 'left': False}
+    collision_type = 0
     rect.x += movement[0]
-    hit_list = collision_test(rect, tiles, fruit_rect, plataform_rect)
+    hit_list, collision_type, index = collision_test(rect, tiles, list_type)
     for tile in hit_list:
-        if movement[0] > 0:
-            rect.right = tile.left
-            collision_types['right'] = True
-        elif movement[0] < 0:
-            rect.left = tile.right
-            collision_types['left'] = True
+
+        if collision_type == '2':
+            QUANTITY_FRUIT -= 1
+
+        if movement[0] > 0 and collision_type != '2':
+            if collision_type == '1':
+                rect.right = tile.left
+                collision_types['right'] = True
+        elif movement[0] < 0 and collision_type != '2':
+            if collision_type == '1':
+                rect.left = tile.right
+                collision_types['left'] = True
+
     rect.y += movement[1]
-    hit_list = collision_test(rect, tiles, fruit_rect, plataform_rect)
+    hit_list, collision_type, index = collision_test(rect, tiles, list_type)
+
     for tile in hit_list:
-        if movement[1] > 0:
-            rect.bottom = tile.top
-            collision_types['bottom'] = True
+
+        if collision_type == '2':
+            QUANTITY_FRUIT -= 1
+
+        if movement[1] > 0 and collision_type != '2':
+            print('Colisão Rect Bottom: ', rect.bottom, 'Colisão Tile Top: ', tile.top)
+            if rect.bottom -1 == tile.top or rect.bottom +2 == tile.top and collision_type == '3':
+                rect.bottom = tile.top
+                collision_types['bottom'] = True
+
+            if collision_type == '1':
+                rect.bottom = tile.top
+                collision_types['bottom'] = True
         elif movement[1] < 0:
-            rect.top = tile.bottom
-            collision_types['top'] = True
+            if collision_type == '1':
+                rect.top = tile.bottom
+                collision_types['top'] = True
+
     return rect, collision_types
 
 def get_fruits(filename, index):
@@ -168,7 +205,7 @@ def get_fruits(filename, index):
 
 
 PLAYER_RECT = pygame.Rect(100, 100, 23, 32)
-FRUIT_RECT = pygame.Rect(100, 100, TILE_SIZE, TILE_SIZE)
+FRUIT_RECT = pygame.Rect(100, 18, TILE_SIZE, TILE_SIZE)
 
 run = True
 clock = pygame.time.Clock()
@@ -181,26 +218,30 @@ while run:
     TILE_SHEET = load_terrain()
 
     tile_rect = []
-    fruit_rect = []
-    plataforms_rect = []
+    list_type = []
     for y, layer in enumerate(MAP):
         for x, tile in enumerate(layer):
             tile_value = int(tile)
             if tile_value in [1, 2, 4, 6, 7, 8, 9, 10, 12, 13, 14, 22, 23, 24, 25, 26, 28, 29, 30, 31, 32, 34, 35, 36, 39, 40, 41, 45, 50, 51, 57, 58]:
                 DISPLAY.blit(TILE_SHEET[tile_value], (x * TILE_SIZE, y * TILE_SIZE))
             if tile == '100':
-                DISPLAY.blit(get_fruits("Apple.png", 17), (x * TILE_SIZE - 16//2, y * TILE_SIZE - 16//2))
+                DISPLAY.blit(get_fruits(SPRITE_100, 17), (x * TILE_SIZE - 16//2, y * TILE_SIZE - 16//2))
+                if PASS != True:
+                    QUANTITY_FRUIT += 1
             if tile == '101':
-                DISPLAY.blit(get_fruits("Bananas.png", 17), (x * TILE_SIZE - 16//2, y * TILE_SIZE - 16//2))
-            if tile in ['100', '101']:
-                fruit_rect.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-            if tile in ['39', '40', '41']:
-                plataforms_rect.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-            if tile != '-1' and tile not in ['39', '40', '41', '100', '101']:
+                DISPLAY.blit(get_fruits(SPRITE_101, 17), (x * TILE_SIZE - 16//2, y * TILE_SIZE - 16//2))
+            if tile != '-1' and tile not in ['39', '40', '41', '100', '101']: # BLocks
+                list_type.append('1')
+            if tile in ['100', '101']: # Fruits
+                list_type.append('2')
+            if tile in ['39', '40', '41']: #Plataform
+                list_type.append('3')
+                #pygame.draw.rect(DISPLAY, WHITE, pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+            if tile != '-1':
                 tile_rect.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
-
+    PASS = True
     # PLAYER STUFFS --------------------------------------------------------------------
-    #pygame.draw.rect(DISPLAY, WHITE, PLAYER_RECT)
+    pygame.draw.rect(DISPLAY, WHITE, PLAYER_RECT)
 
     FRAME_FRUITS += 0.45
     FRAME += 0.45
@@ -247,7 +288,7 @@ while run:
         if player_movement[0] > 0:
             FLIP = False
 
-    PLAYER_RECT, collisions = move(PLAYER_RECT, player_movement, tile_rect, fruit_rect, plataforms_rect)
+    PLAYER_RECT, collisions = move(PLAYER_RECT, player_movement, tile_rect, list_type)
 
     if collisions['bottom']:
         GRAVITY = 0
@@ -291,7 +332,12 @@ while run:
             if event.key == pygame.K_a:
                 MOVE_LEFT = False
 
+    text_quantity_fruit = FONT.render(str(QUANTITY_FRUIT), False, WHITE)
+    DISPLAY.blit(text_quantity_fruit, (120, 20))
+    DISPLAY.blit(get_fruits("Apple.png", 17), (FRUIT_RECT.x - 8, FRUIT_RECT.y - 8))
+
     text = FONT.render(str(round(clock.get_fps(),2)), True, WHITE)
+
     DISPLAY.blit(text,(640 - 100, 20))
 
     SCREEN.blit(pygame.transform.scale(DISPLAY, WINDOW_SIZE), (0, 0))
