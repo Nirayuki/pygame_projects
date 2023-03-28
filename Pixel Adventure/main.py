@@ -17,7 +17,7 @@ SCREEN = pygame.display.set_mode(WINDOW_SIZE)
 
 DISPLAY = pygame.Surface(WINDOW_GAME)
 
-FONT = pygame.font.SysFont("Verdana", 20)
+FONT = pygame.font.SysFont("Verdana", 10)
 
 
 MOVE_RIGHT = False
@@ -116,9 +116,8 @@ def load_terrain():
     return list_tile 
         
 
-def collision_test(rect, tiles):
+def collision_test(rect, tiles, fruit_rect, plataform_rect):
     hit_list = []
-
     for tile in tiles:
         if rect.colliderect(tile):
             hit_list.append(tile)
@@ -126,10 +125,10 @@ def collision_test(rect, tiles):
     return hit_list
 
 
-def move(rect, movement, tiles):
+def move(rect, movement, tiles, fruit_rect, plataform_rect):
     collision_types = {'top': False, 'bottom': False, 'right': False, 'left': False}
     rect.x += movement[0]
-    hit_list = collision_test(rect, tiles)
+    hit_list = collision_test(rect, tiles, fruit_rect, plataform_rect)
     for tile in hit_list:
         if movement[0] > 0:
             rect.right = tile.left
@@ -138,7 +137,7 @@ def move(rect, movement, tiles):
             rect.left = tile.right
             collision_types['left'] = True
     rect.y += movement[1]
-    hit_list = collision_test(rect, tiles)
+    hit_list = collision_test(rect, tiles, fruit_rect, plataform_rect)
     for tile in hit_list:
         if movement[1] > 0:
             rect.bottom = tile.top
@@ -169,7 +168,7 @@ def get_fruits(filename, index):
 
 
 PLAYER_RECT = pygame.Rect(100, 100, 23, 32)
-FRUIT_RECT = pygame.Rect(150, 150, 32//2, 32//2)
+FRUIT_RECT = pygame.Rect(100, 100, TILE_SIZE, TILE_SIZE)
 
 run = True
 clock = pygame.time.Clock()
@@ -182,18 +181,26 @@ while run:
     TILE_SHEET = load_terrain()
 
     tile_rect = []
+    fruit_rect = []
+    plataforms_rect = []
     for y, layer in enumerate(MAP):
         for x, tile in enumerate(layer):
             tile_value = int(tile)
-            if tile_value in [1, 2, 4, 6, 7, 8, 9, 10, 12, 13, 14, 22, 23, 24, 25, 26, 28, 29, 30, 31, 32, 34, 35, 36, 45, 50, 51, 57, 58]:
+            if tile_value in [1, 2, 4, 6, 7, 8, 9, 10, 12, 13, 14, 22, 23, 24, 25, 26, 28, 29, 30, 31, 32, 34, 35, 36, 39, 40, 41, 45, 50, 51, 57, 58]:
                 DISPLAY.blit(TILE_SHEET[tile_value], (x * TILE_SIZE, y * TILE_SIZE))
-            #if tile == '100':
-                #DISPLAY.blit(aplle_fruit, (FRUIT_RECT.x - 16//2, FRUIT_RECT.y - 16//2))
-            if tile != '-1':
+            if tile == '100':
+                DISPLAY.blit(get_fruits("Apple.png", 17), (x * TILE_SIZE - 16//2, y * TILE_SIZE - 16//2))
+            if tile == '101':
+                DISPLAY.blit(get_fruits("Bananas.png", 17), (x * TILE_SIZE - 16//2, y * TILE_SIZE - 16//2))
+            if tile in ['100', '101']:
+                fruit_rect.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+            if tile in ['39', '40', '41']:
+                plataforms_rect.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
+            if tile != '-1' and tile not in ['39', '40', '41', '100', '101']:
                 tile_rect.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
     # PLAYER STUFFS --------------------------------------------------------------------
-    pygame.draw.rect(DISPLAY, WHITE, PLAYER_RECT)
+    #pygame.draw.rect(DISPLAY, WHITE, PLAYER_RECT)
 
     FRAME_FRUITS += 0.45
     FRAME += 0.45
@@ -202,7 +209,7 @@ while run:
 
     DISPLAY.blit(pygame.transform.flip(PLAYER_ANIMATION, FLIP, False), (PLAYER_RECT.x - 3.5, PLAYER_RECT.y))
 
-    DISPLAY.blit(get_fruits("Apple.png", 17), (FRUIT_RECT.x - 16//2, FRUIT_RECT.y - 16//2))
+    # DISPLAY.blit(get_fruits("Apple.png", 17), (FRUIT_RECT.x - 16//2, FRUIT_RECT.y - 16//2))
     
     player_movement = [0, 0]
     
@@ -240,7 +247,7 @@ while run:
         if player_movement[0] > 0:
             FLIP = False
 
-    PLAYER_RECT, collisions = move(PLAYER_RECT, player_movement, tile_rect)
+    PLAYER_RECT, collisions = move(PLAYER_RECT, player_movement, tile_rect, fruit_rect, plataforms_rect)
 
     if collisions['bottom']:
         GRAVITY = 0
@@ -284,6 +291,8 @@ while run:
             if event.key == pygame.K_a:
                 MOVE_LEFT = False
 
+    text = FONT.render(str(round(clock.get_fps(),2)), True, WHITE)
+    DISPLAY.blit(text,(640 - 100, 20))
 
     SCREEN.blit(pygame.transform.scale(DISPLAY, WINDOW_SIZE), (0, 0))
     pygame.display.flip() # update display
