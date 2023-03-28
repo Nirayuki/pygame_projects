@@ -17,15 +17,18 @@ SCREEN = pygame.display.set_mode(WINDOW_SIZE)
 
 DISPLAY = pygame.Surface(WINDOW_GAME)
 
+FONT = pygame.font.SysFont("Verdana", 20)
 
 
 MOVE_RIGHT = False
 MOVE_LEFT = False
 JUMP = False
 FALL = False
+#DOUBLE_JUMP = False
 GRAVITY = 0
 
 FRAME = 0
+FRAME_FRUITS = 0
 
 FLIP = False
 PLAYER_ACTION = 'idle'
@@ -65,13 +68,6 @@ def read_csv(filename):
             map.append(list(row))
     return map
 
-def load_map(filename):
-    tiles = []
-    map = read_csv(filename)
-
-    for x, row in enumerate(map):
-        for tile in row:
-            pass
 # Functions -------------------------------------------------------------------
 
 
@@ -86,23 +82,10 @@ def load_image(filename, index):
         FRAME = 0
 
     player_animation = []
-    if filename == "Idle.png":
-        for i in range(index):
+    if filename in ["Idle.png", "Run.png", "Jump.png", "Fall.png"]:
+         for i in range(index):
             img = img_sheet.subsurface((i * 32, 0), (32, 32))
             player_animation.append(img)
-    if filename == "Run.png":
-        for i in range(index):
-            img = img_sheet.subsurface((i * 32, 0), (32, 32))
-            player_animation.append(img)
-    if filename == "Jump.png":
-        for i in range(index):
-            img = img_sheet.subsurface((i * 32, 0), (32, 32))
-            player_animation.append(img)
-    if filename == "Fall.png": 
-        for i in range(index):
-            img = img_sheet.subsurface((i * 32, 0), (32, 32))
-            player_animation.append(img)
-
     return player_animation[int(FRAME)]
 
 
@@ -164,10 +147,29 @@ def move(rect, movement, tiles):
             rect.top = tile.bottom
             collision_types['top'] = True
     return rect, collision_types
-# Classes ----------------------------------------------------------------------
+
+def get_fruits(filename, index):
+    global FRAME_FRUITS
+    list_fruits = []
+    path = os.path.join(DIR, 'Assets', 'Items', 'Fruits', filename)
+
+    img = pygame.image.load(path)
+
+    if FRAME_FRUITS > index:
+        FRAME_FRUITS = 0
+
+    if filename in ['Apple.png', 'Bananas.png', 'Cherries.png', 'Kiwi.png', 'Melon.png', 'Orange.png', 'Pineapple.png', 'Strawberry.png', 'Collected.png']:
+        for i in range(index):
+            list_fruits.append(img.subsurface((i * 32, 0), (32, 32)))
+    return list_fruits[int(FRAME_FRUITS)]
+    
+
+
+# Classes ----------------------------------------------------------------------    
 
 
 PLAYER_RECT = pygame.Rect(100, 100, 23, 32)
+FRUIT_RECT = pygame.Rect(150, 150, 32//2, 32//2)
 
 run = True
 clock = pygame.time.Clock()
@@ -185,16 +187,22 @@ while run:
             tile_value = int(tile)
             if tile_value in [1, 2, 4, 6, 7, 8, 9, 10, 12, 13, 14, 22, 23, 24, 25, 26, 28, 29, 30, 31, 32, 34, 35, 36, 45, 50, 51, 57, 58]:
                 DISPLAY.blit(TILE_SHEET[tile_value], (x * TILE_SIZE, y * TILE_SIZE))
+            #if tile == '100':
+                #DISPLAY.blit(aplle_fruit, (FRUIT_RECT.x - 16//2, FRUIT_RECT.y - 16//2))
             if tile != '-1':
                 tile_rect.append(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
     # PLAYER STUFFS --------------------------------------------------------------------
-    #pygame.draw.rect(DISPLAY, WHITE,PLAYER_RECT)
+    pygame.draw.rect(DISPLAY, WHITE, PLAYER_RECT)
+
+    FRAME_FRUITS += 0.45
     FRAME += 0.45
 
     PLAYER_ANIMATION = load_image(ANIMATIONS[PLAYER_ACTION], INDEX_SHEET)
 
     DISPLAY.blit(pygame.transform.flip(PLAYER_ANIMATION, FLIP, False), (PLAYER_RECT.x - 3.5, PLAYER_RECT.y))
+
+    DISPLAY.blit(get_fruits("Apple.png", 17), (FRUIT_RECT.x - 16//2, FRUIT_RECT.y - 16//2))
     
     player_movement = [0, 0]
     
@@ -218,17 +226,18 @@ while run:
     if player_movement[0] < 0 and JUMP == False and FALL == False:
         change_action('run')
         FLIP = True
+
     if JUMP == True:
         change_action('jump')
         if player_movement[0] < 0:
             FLIP = True
-        else:
+        if player_movement[0] > 0:
             FLIP = False
     if FALL == True:
         change_action('fall')
         if player_movement[0] < 0:
             FLIP = True
-        else:
+        if player_movement[0] > 0:
             FLIP = False
 
     PLAYER_RECT, collisions = move(PLAYER_RECT, player_movement, tile_rect)
@@ -237,8 +246,17 @@ while run:
         GRAVITY = 0
         air_timer = 0
         FALL = False
+        JUMP = False
+    if collisions['top']:
+        GRAVITY = 0
     else:
         air_timer += 1
+
+    if air_timer >= 30:
+        JUMP = False
+        FALL = True
+    if GRAVITY > 1:
+        FALL = True
     #player_movement[1] += GRAVITY
 
     #GRAVITY += 0.2
